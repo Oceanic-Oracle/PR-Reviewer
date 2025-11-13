@@ -1,0 +1,22 @@
+services:
+  postgres:
+    build:
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: User
+      POSTGRES_PASSWORD: 241265
+    ports:
+      - "5432"
+    networks:
+      - pr-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U User -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

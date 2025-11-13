@@ -1,0 +1,6 @@
+include:
+  - postgres/compose.yml
+
+networks:
+  pr-network:
+    driver: bridge
