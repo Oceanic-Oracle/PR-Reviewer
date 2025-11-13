@@ -1,15 +1,18 @@
 package repo
 
-import "log/slog"
+import (
+	"pr/internal/repo/pr"
+	"pr/internal/repo/user"
+)
 
 type Repo struct {
-	log *slog.Logger
-	conn interface{}
+	User user.UserInterface
+	PR   pr.PRInterface
 }
 
-func NewRepo(conn interface{}, log *slog.Logger) *Repo {
+func NewRepo(userDb user.UserInterface, prDb pr.PRInterface) *Repo {
 	return &Repo{
-		conn: conn,
-		log: log,
+		User: userDb,
+		PR:   prDb,
 	}
 }

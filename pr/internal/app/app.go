@@ -7,6 +7,9 @@ import (
 	"os/signal"
 	"pr/internal/config"
 	"pr/internal/repo"
+	pr_postgres "pr/internal/repo/pr/postgres"
+	user_postgres "pr/internal/repo/user/postgres"
+	"pr/internal/server/http"
 	"pr/pkg/database"
 	"pr/pkg/logger"
 	"syscall"
@@ -19,14 +22,18 @@ type Bootstrap struct {
 }
 
 func (b *Bootstrap) Run() {
-	//repos := b.initRepo()
+	repos, close := b.initRepo()
+	defer close()
+
+	srv := http.NewRestApi(&b.cfg.Http, repos, b.log)
+	defer srv.Close()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 	<-stop
 }
 
-func (b *Bootstrap) initRepo() (repos interface{}) {
+func (b *Bootstrap) initRepo() (*repo.Repo, func()) {
 	switch b.cfg.Storage.Type {
 	case "postgres":
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -37,10 +44,15 @@ func (b *Bootstrap) initRepo() (repos interface{}) {
 			// добавить noop
 		}
 
-		return repo.NewRepo(conn, b.log)
+		userDb := user_postgres.NewPrPostgres(conn, b.log)
+		prDb := pr_postgres.NewPrPostgres(conn, b.log)
+
+		return repo.NewRepo(userDb, prDb), func() {
+			conn.Close()
+		}
 	default:
 		// добавить noop
-		return nil
+		return nil, func(){}
 	}
 }
 
@@ -50,6 +62,6 @@ func NewBootstrap() *Bootstrap {
 
 	return &Bootstrap{
 		log: log,
-		cfg: cfg,	
+		cfg: cfg,
 	}
 }

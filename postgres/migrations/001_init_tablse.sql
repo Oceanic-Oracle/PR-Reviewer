@@ -20,5 +20,5 @@ CREATE TABLE pull_requests (
 
 CREATE TABLE users_pull_requests (
     pull_requests_id TEXT NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
-    users_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    users_id TEXT NOT NULL REFERENCES users(id)
 );
