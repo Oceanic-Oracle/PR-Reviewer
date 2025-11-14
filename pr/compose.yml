@@ -1,0 +1,11 @@
+services:
+  pr:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - pr-network
+    depends_on:
+      postgres:
+        condition: service_healthy

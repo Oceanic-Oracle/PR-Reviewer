@@ -26,6 +26,7 @@ func (b *Bootstrap) Run() {
 	defer close()
 
 	srv := http.NewRestApi(&b.cfg.Http, repos, b.log)
+	srv.CreateServer()
 	defer srv.Close()
 
 	stop := make(chan os.Signal, 1)

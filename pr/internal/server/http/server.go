@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"pr/internal/config"
 	"pr/internal/repo"
+	"pr/internal/server/http/user"
 	"strconv"
 	"time"
 
@@ -23,6 +24,7 @@ type Server struct {
 func (s *Server) CreateServer() {
 	router := chi.NewRouter()
 
+	router.Post("/team/add", user.CreateTeam(s.repo, s.log))
 
 	idleTimeout, _ := strconv.Atoi(s.cfg.IdleTimeout)
 	timeout, _ := strconv.Atoi(s.cfg.Timeout)
