@@ -1,5 +1,7 @@
 package pr
 
+import "time"
+
 type PRModel struct {
 	Id       string
 	Name     string
@@ -12,6 +14,6 @@ type PRWithDateModel struct {
 	Name      string
 	AuthorId  string
 	Status    string
-	CreatedAt string
-	MergedAt  string
+	CreatedAt *time.Time
+	MergedAt  *time.Time
 }

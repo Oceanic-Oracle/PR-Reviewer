@@ -1,37 +1,34 @@
 package dto
 
-// Requests
-type (
-	CreateTeamReq struct {
-		TeamName string `json:"team_name"`
-		Members  []User `json:"members"`
-	}
-)
+// general
 
-// Responses
-type (
-	CreateTeamRes struct {
-		Team CreateTeamReq `json:"team"`
-	}
-)
+type User struct {
+	UserId   string `json:"user_id"`
+	Username string `json:"username"`
+	IsActive bool   `json:"is_active"`
+}
 
-// Errors
-type (
-	CreateTeamErr struct {
-		Error ErrorDetails `json:"error"`
-	}
-)
+type UserWithTeam struct {
+	UserId   string `json:"user_id"`
+	Username string `json:"username"`
+	IsActive bool   `json:"is_active"`
+	TeamName string `json:"team_name"`
+}
 
-// General
-type (
-	User struct {
-		UserId   string `json:"user_id"`
-		UserName string `json:"username"`
-		IsActive bool   `json:"is_active"`
-	}
+// requests
 
-	ErrorDetails struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	}
-)
+type SetUserStatusRequest struct {
+	Id       string `json:"user_id"`
+	IsActive bool   `json:"is_active"`
+}
+
+// responses
+
+type SetUserStatusResponse struct {
+	User UserWithTeam `json:"user"`
+}
+
+type GetUserPRResponse struct {
+	UserId string `json:"user_id"`
+	PR     []PR   `json:"pull_requests"`
+}

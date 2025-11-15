@@ -8,6 +8,7 @@ import (
 	"pr/internal/config"
 	"pr/internal/repo"
 	pr_postgres "pr/internal/repo/pr/postgres"
+	team_postgres "pr/internal/repo/team/postgres"
 	user_postgres "pr/internal/repo/user/postgres"
 	"pr/internal/server/http"
 	"pr/pkg/database"
@@ -45,10 +46,11 @@ func (b *Bootstrap) initRepo() (*repo.Repo, func()) {
 			// добавить noop
 		}
 
+		teamDb := team_postgres.NewPrPostgres(conn, b.log)
 		userDb := user_postgres.NewPrPostgres(conn, b.log)
 		prDb := pr_postgres.NewPrPostgres(conn, b.log)
 
-		return repo.NewRepo(userDb, prDb), func() {
+		return repo.NewRepo(teamDb, userDb, prDb), func() {
 			conn.Close()
 		}
 	default:

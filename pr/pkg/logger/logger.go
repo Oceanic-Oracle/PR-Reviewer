@@ -3,6 +3,7 @@ package logger
 import (
 	"log/slog"
 	"os"
+	"pr/internal/logctx"
 )
 
 const (
@@ -11,14 +12,15 @@ const (
 )
 
 func SetupLogger(env string) *slog.Logger {
-	var logger *slog.Logger
-
+	var level slog.Level
 	switch env {
 	case envDebug:
-		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		level = slog.LevelDebug
 	case envProd:
-		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		level = slog.LevelInfo
 	}
-	
-	return logger
+
+	return slog.New(logctx.NewHandlerMiddleware(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}),
+	))
 }

@@ -17,10 +17,10 @@ type PRPostgres struct {
 	log  *slog.Logger
 }
 
-func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) error {
+func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) ([]string, error) {
 	tx, err := prp.conn.Begin(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback(ctx)
 
@@ -28,9 +28,9 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) error {
 	err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", prm.AuthorId).Scan(&authorTeam)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return apperrors.ErrNotFound
+			return nil, apperrors.ErrNotFound
 		}
-		return err
+		return nil, err
 	}
 
 	rows, err := tx.Query(ctx, `
@@ -43,7 +43,7 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) error {
 		LIMIT 2`,
 		authorTeam, prm.AuthorId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -51,23 +51,23 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) error {
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			return err
+			return nil, err
 		}
 		reviewers = append(reviewers, id)
 	}
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO pull_requests (id, name, author_id, status)
-		VALUES ($1, $2, $3, 'OPEN')`,
-		prm.Id, prm.Name, prm.AuthorId)
+		VALUES ($1, $2, $3, $4)`,
+		prm.Id, prm.Name, prm.AuthorId, prm.Status)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				return apperrors.ErrPRExists
+				return nil, apperrors.ErrPRExists
 			}
 		}
-		return err
+		return nil, err
 	}
 
 	for _, reviewerID := range reviewers {
@@ -76,11 +76,15 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) error {
 			VALUES ($1, $2)`,
 			prm.Id, reviewerID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return reviewers, nil
 }
 
 func (prp *PRPostgres) MergePR(ctx context.Context, id string) (*pr.PRWithDateModel, []string, error) {
@@ -119,7 +123,7 @@ func (prp *PRPostgres) GetPrReviewers(ctx context.Context, id string) ([]string,
 	var usersId []string
 
 	sql := `
-	SELECT users.id 
+	SELECT u.id 
 	FROM users AS u
 		JOIN users_pull_requests AS upr
 			ON u.id = upr.users_id
@@ -150,6 +154,18 @@ func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) 
 		return pr.PRModel{}, nil, "", err
 	}
 	defer tx.Rollback(ctx)
+
+	var userExists int
+	err = tx.QueryRow(ctx, `
+		SELECT 1
+		FROM users
+		WHERE id = $1`, userId).Scan(&userExists)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return pr.PRModel{}, nil, "", apperrors.ErrNotFound
+		}
+		return pr.PRModel{}, nil, "", err
+	}
 
 	var bodyPr pr.PRModel
 	err = tx.QueryRow(ctx, `
@@ -182,7 +198,7 @@ func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) 
 	}
 
 	var teamName string
-	err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", userId).Scan(&teamName)
+	err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", bodyPr.AuthorId).Scan(&teamName)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return pr.PRModel{}, nil, "", apperrors.ErrNotFound
@@ -200,6 +216,7 @@ func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) 
 		  AND u.id != $3
 		  AND u.id NOT IN (
 		      SELECT users_id FROM users_pull_requests WHERE pull_requests_id = $4
+			  	AND users_id != $2
 		  )
 		ORDER BY RANDOM()
 		LIMIT 1`,

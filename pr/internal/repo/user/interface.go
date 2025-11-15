@@ -1,7 +1,11 @@
 package user
 
-import "context"
+import (
+	"context"
+	"pr/internal/repo/pr"
+)
 
 type UserInterface interface {
-	CreateOrUpdateTeamWithUsers(ctx context.Context, team string, users []UserModel) (string, []UserModel, error)
+	SetUserStatus(ctx context.Context, id string, isActive bool) (UserModel, error)
+	GetPrUser(ctx context.Context, userId string) ([]pr.PRModel, error)
 }

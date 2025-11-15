@@ -7,7 +7,7 @@ BEGIN
 
 SELECT COUNT(*) INTO rev_count
     FROM users_pull_requests
-    WHERE pull_requests_id = pull_requests_id;
+    WHERE pull_requests_id = NEW.pull_requests_id;
 
 IF rev_count >= 2 THEN
     RAISE EXCEPTION 'Maximum 2 reviewers allowed per PR';
@@ -75,6 +75,10 @@ END IF;
 
 RETURN NEW;
 
-END
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_switch_status
 BEFORE UPDATE ON pull_requests
-FOR EACH ROW EXECUTE FUNCTION switch_status();
+FOR EACH ROW
+EXECUTE FUNCTION switch_status();
