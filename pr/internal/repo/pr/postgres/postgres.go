@@ -1,4 +1,4 @@
-package pr_postgres
+package prpostgres
 
 import (
 	"context"
@@ -22,16 +22,21 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) ([]string, 
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	var authorTeam string
-	err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", prm.AuthorId).Scan(&authorTeam)
-	if err != nil {
+	if err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", prm.AuthorID).Scan(&authorTeam); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, apperrors.ErrNotFound
 		}
+
 		return nil, err
 	}
+
+	var reviewers []string
 
 	rows, err := tx.Query(ctx, `
 		SELECT id
@@ -41,25 +46,25 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) ([]string, 
 		  AND is_active = true
 		ORDER BY RANDOM()
 		LIMIT 2`,
-		authorTeam, prm.AuthorId)
+		authorTeam, prm.AuthorID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var reviewers []string
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
+
 		reviewers = append(reviewers, id)
 	}
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO pull_requests (id, name, author_id, status)
 		VALUES ($1, $2, $3, $4)`,
-		prm.Id, prm.Name, prm.AuthorId, prm.Status)
+		prm.ID, prm.Name, prm.AuthorID, prm.Status)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -67,6 +72,7 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) ([]string, 
 				return nil, apperrors.ErrPRExists
 			}
 		}
+
 		return nil, err
 	}
 
@@ -74,7 +80,7 @@ func (prp *PRPostgres) CreatePR(ctx context.Context, prm pr.PRModel) ([]string, 
 		_, err := tx.Exec(ctx, `
 			INSERT INTO users_pull_requests (pull_requests_id, users_id)
 			VALUES ($1, $2)`,
-			prm.Id, reviewerID)
+			prm.ID, reviewerID)
 		if err != nil {
 			return nil, err
 		}
@@ -97,17 +103,19 @@ func (prp *PRPostgres) MergePR(ctx context.Context, id string) (*pr.PRWithDateMo
 
 	var prModel pr.PRWithDateModel
 	err := row.Scan(
-		&prModel.Id,
+		&prModel.ID,
 		&prModel.Name,
-		&prModel.AuthorId,
+		&prModel.AuthorID,
 		&prModel.Status,
 		&prModel.CreatedAt,
 		&prModel.MergedAt,
 	)
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil, apperrors.ErrNotFound
 		}
+
 		return nil, nil, err
 	}
 
@@ -120,7 +128,7 @@ func (prp *PRPostgres) MergePR(ctx context.Context, id string) (*pr.PRWithDateMo
 }
 
 func (prp *PRPostgres) GetPrReviewers(ctx context.Context, id string) ([]string, error) {
-	var usersId []string
+	var usersID []string
 
 	sql := `
 	SELECT u.id 
@@ -142,41 +150,50 @@ func (prp *PRPostgres) GetPrReviewers(ctx context.Context, id string) ([]string,
 		if err = rows.Scan(&body); err != nil {
 			return nil, err
 		}
-		usersId = append(usersId, body)
+
+		usersID = append(usersID, body)
 	}
 
-	return usersId, nil
+	return usersID, nil
 }
 
-func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) (pr.PRModel, []string, string, error) {
+func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prID, userID string) (pr.PRModel, []string, string, error) {
 	tx, err := prp.conn.Begin(ctx)
 	if err != nil {
 		return pr.PRModel{}, nil, "", err
 	}
-	defer tx.Rollback(ctx)
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	var userExists int
 	err = tx.QueryRow(ctx, `
 		SELECT 1
 		FROM users
-		WHERE id = $1`, userId).Scan(&userExists)
+		WHERE id = $1`, userID).Scan(&userExists)
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return pr.PRModel{}, nil, "", apperrors.ErrNotFound
 		}
+
 		return pr.PRModel{}, nil, "", err
 	}
 
 	var bodyPr pr.PRModel
+
 	err = tx.QueryRow(ctx, `
 		SELECT id, name, author_id, status
 		FROM pull_requests
-		WHERE id = $1`, prId).Scan(
-		&bodyPr.Id, &bodyPr.Name, &bodyPr.AuthorId, &bodyPr.Status)
+		WHERE id = $1`, prID).Scan(
+		&bodyPr.ID, &bodyPr.Name, &bodyPr.AuthorID, &bodyPr.Status)
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return pr.PRModel{}, nil, "", apperrors.ErrNotFound
 		}
+
 		return pr.PRModel{}, nil, "", err
 	}
 
@@ -185,24 +202,28 @@ func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) 
 	}
 
 	var assigned int
+
 	err = tx.QueryRow(ctx, `
 		SELECT 1
 		FROM users_pull_requests
 		WHERE pull_requests_id = $1 AND users_id = $2`,
-		prId, userId).Scan(&assigned)
+		prID, userID).Scan(&assigned)
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return pr.PRModel{}, nil, "", apperrors.ErrNotAssigned
 		}
+
 		return pr.PRModel{}, nil, "", err
 	}
 
 	var teamName string
-	err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", bodyPr.AuthorId).Scan(&teamName)
-	if err != nil {
+
+	if err = tx.QueryRow(ctx, "SELECT team_name FROM users WHERE id = $1", bodyPr.AuthorID).Scan(&teamName); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return pr.PRModel{}, nil, "", apperrors.ErrNotFound
 		}
+
 		return pr.PRModel{}, nil, "", err
 	}
 
@@ -220,11 +241,13 @@ func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) 
 		  )
 		ORDER BY RANDOM()
 		LIMIT 1`,
-		teamName, userId, bodyPr.AuthorId, prId).Scan(&newReviewerID)
+		teamName, userID, bodyPr.AuthorID, prID).Scan(&newReviewerID)
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return pr.PRModel{}, nil, "", apperrors.ErrNoCandidate
 		}
+
 		return pr.PRModel{}, nil, "", err
 	}
 
@@ -232,24 +255,26 @@ func (prp *PRPostgres) SwapPRReviewer(ctx context.Context, prId, userId string) 
 		UPDATE users_pull_requests
 		SET users_id = $1
 		WHERE pull_requests_id = $2 AND users_id = $3`,
-		newReviewerID, prId, userId)
+		newReviewerID, prID, userID)
 	if err != nil {
 		return pr.PRModel{}, nil, "", err
 	}
 
+	var newReviewers []string
+
 	rows, err := tx.Query(ctx, `
-		SELECT users_id FROM users_pull_requests WHERE pull_requests_id = $1`, prId)
+		SELECT users_id FROM users_pull_requests WHERE pull_requests_id = $1`, prID)
 	if err != nil {
 		return pr.PRModel{}, nil, "", err
 	}
 	defer rows.Close()
 
-	var newReviewers []string
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
 			return pr.PRModel{}, nil, "", err
 		}
+
 		newReviewers = append(newReviewers, id)
 	}
 

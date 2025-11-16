@@ -7,8 +7,8 @@ import (
 )
 
 type Ctx struct {
-	ReqId  string
-	UserId string
+	ReqID  string
+	UserID string
 	Team   string
 	PR     string
 }
@@ -17,22 +17,24 @@ type keyType int
 
 const key keyType = 0
 
-func WithReqId(ctx context.Context) context.Context {
-	reqId := uuid.New().String()
+func WithReqID(ctx context.Context) context.Context {
+	reqID := uuid.New().String()
 
 	if c, ok := ctx.Value(key).(Ctx); ok {
-		c.ReqId = reqId
+		c.ReqID = reqID
 		return context.WithValue(ctx, key, c)
 	}
-	return context.WithValue(ctx, key, Ctx{ReqId: reqId})
+
+	return context.WithValue(ctx, key, Ctx{ReqID: reqID})
 }
 
-func WithUserID(ctx context.Context, userId string) context.Context {
+func WithUserID(ctx context.Context, userID string) context.Context {
 	if c, ok := ctx.Value(key).(Ctx); ok {
-		c.UserId = userId
+		c.UserID = userID
 		return context.WithValue(ctx, key, c)
 	}
-	return context.WithValue(ctx, key, Ctx{UserId: userId})
+
+	return context.WithValue(ctx, key, Ctx{UserID: userID})
 }
 
 func WithTeam(ctx context.Context, team string) context.Context {
@@ -40,6 +42,7 @@ func WithTeam(ctx context.Context, team string) context.Context {
 		c.Team = team
 		return context.WithValue(ctx, key, c)
 	}
+
 	return context.WithValue(ctx, key, Ctx{Team: team})
 }
 
@@ -48,5 +51,6 @@ func WithPR(ctx context.Context, prID string) context.Context {
 		c.PR = prID
 		return context.WithValue(ctx, key, c)
 	}
+
 	return context.WithValue(ctx, key, Ctx{PR: prID})
 }

@@ -13,6 +13,7 @@ const (
 
 func SetupLogger(env string) *slog.Logger {
 	var level slog.Level
+
 	switch env {
 	case envDebug:
 		level = slog.LevelDebug

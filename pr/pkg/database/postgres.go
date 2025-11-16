@@ -11,15 +11,17 @@ func NewConn(ctx context.Context, url string, log *slog.Logger) (*pgxpool.Pool, 
 	conn, err := pgxpool.New(ctx, url)
 	if err != nil {
 		log.Error("failed to connection to postgres", "err", err)
+
 		return nil, err
 	}
 
 	if err := conn.Ping(ctx); err != nil {
-        log.Error("failed to ping database",
-            "err", err,
-            "url", url)
-        return nil, err
-    }
+		log.Error("failed to ping database",
+			"err", err,
+			"url", url)
+
+		return nil, err
+	}
 
 	return conn, nil
 }

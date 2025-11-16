@@ -12,10 +12,10 @@ type Repo struct {
 	PR   pr.PRInterface
 }
 
-func NewRepo(teamDb team.UserInterface, userDb user.UserInterface, prDb pr.PRInterface) *Repo {
+func NewRepo(teamDB team.UserInterface, userDB user.UserInterface, prDB pr.PRInterface) *Repo {
 	return &Repo{
-		Team: teamDb,
-		User: userDb,
-		PR:   prDb,
+		Team: teamDB,
+		User: userDB,
+		PR:   prDB,
 	}
 }

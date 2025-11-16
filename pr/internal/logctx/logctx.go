@@ -19,19 +19,23 @@ func (h *HandlerMiddleware) Enabled(ctx context.Context, level slog.Level) bool 
 
 func (h *HandlerMiddleware) Handle(ctx context.Context, record slog.Record) error {
 	if c, ok := ctx.Value(key).(Ctx); ok {
-		if c.ReqId != "" {
-			record.Add("req_id", c.ReqId)
+		if c.ReqID != "" {
+			record.Add("req_id", c.ReqID)
 		}
-		if c.UserId != "" {
-			record.Add("user_id", c.UserId)
+
+		if c.UserID != "" {
+			record.Add("user_id", c.UserID)
 		}
+
 		if c.Team != "" {
 			record.Add("team", c.Team)
 		}
+
 		if c.PR != "" {
 			record.Add("pr_id", c.PR)
 		}
 	}
+
 	return h.next.Handle(ctx, record)
 }
 

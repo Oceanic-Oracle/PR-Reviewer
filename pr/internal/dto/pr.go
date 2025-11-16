@@ -5,9 +5,9 @@ import "time"
 // general
 
 type PR struct {
-	Id       string `json:"pull_request_id"`
+	ID       string `json:"pull_request_id"`
 	Name     string `json:"pull_request_name"`
-	AuthorId string `json:"author_id"`
+	AuthorID string `json:"author_id"`
 	Status   string `json:"status"`
 }
 
@@ -25,18 +25,18 @@ type PRWithReviewersAndMerge struct {
 // requests
 
 type CreatePRRequest struct {
-	Id       string `json:"pull_request_id"`
+	ID       string `json:"pull_request_id"`
 	Name     string `json:"pull_request_name"`
-	AuthorId string `json:"author_id"`
+	AuthorID string `json:"author_id"`
 }
 
 type MergePRRequest struct {
-	Id string `json:"pull_request_id"`
+	ID string `json:"pull_request_id"`
 }
 
 type SwapPRReviewerRequest struct {
-	PRId      string `json:"pull_request_id"`
-	OldUserId string `json:"old_reviewer_id"`
+	PRID      string `json:"pull_request_id"`
+	OldUserID string `json:"old_reviewer_id"`
 }
 
 // responses

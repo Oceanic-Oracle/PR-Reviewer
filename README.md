@@ -10,6 +10,11 @@ docker compose up --build
 make run
 ```
 
+## Линтер
+В проекте используется `golangci-lint` для статического анализа кода.
+Конфигурация: [.golangci.yml](pr/.golangci.yml).\
+Использовать можно через [lint.go](pr/lint.go)
+
 ## Вопросы/Проблемы
 В ТЗ (openapi.yml) написано:
 ```

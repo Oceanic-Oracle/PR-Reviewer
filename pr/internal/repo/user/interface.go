@@ -7,5 +7,5 @@ import (
 
 type UserInterface interface {
 	SetUserStatus(ctx context.Context, id string, isActive bool) (UserModel, error)
-	GetPrUser(ctx context.Context, userId string) ([]pr.PRModel, error)
+	GetPrUser(ctx context.Context, userID string) ([]pr.PRModel, error)
 }

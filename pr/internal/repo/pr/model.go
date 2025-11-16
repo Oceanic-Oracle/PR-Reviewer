@@ -3,16 +3,16 @@ package pr
 import "time"
 
 type PRModel struct {
-	Id       string
+	ID       string
 	Name     string
-	AuthorId string
+	AuthorID string
 	Status   string
 }
 
 type PRWithDateModel struct {
-	Id        string
+	ID        string
 	Name      string
-	AuthorId  string
+	AuthorID  string
 	Status    string
 	CreatedAt *time.Time
 	MergedAt  *time.Time

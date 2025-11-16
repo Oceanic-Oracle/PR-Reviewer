@@ -1,7 +1,7 @@
 package user
 
 type UserModel struct {
-	Id       string
+	ID       string
 	UserName string
 	TeamName string
 	IsActive bool

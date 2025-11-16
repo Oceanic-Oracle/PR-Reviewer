@@ -29,13 +29,13 @@ var (
 	ErrInternalServer = &AppError{
 		Code:    "INTERNAL",
 		Message: "internal server error",
-		Status: http.StatusInternalServerError,
+		Status:  http.StatusInternalServerError,
 	}
 
 	ErrBadRequest = &AppError{
 		Code:    "BAD_REQUEST",
 		Message: "bad request",
-		Status: http.StatusBadRequest,
+		Status:  http.StatusBadRequest,
 	}
 
 	ErrPRExists = &AppError{

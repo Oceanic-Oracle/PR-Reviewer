@@ -17,7 +17,7 @@ import (
 
 func CreateTeam(repo *repo.Repo, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := logctx.WithReqId(r.Context())
+		ctx := logctx.WithReqID(r.Context())
 		log.InfoContext(ctx, "Received CreateTeam request",
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
@@ -26,32 +26,38 @@ func CreateTeam(repo *repo.Repo, log *slog.Logger) http.HandlerFunc {
 		body := &dto.CreateTeamRequest{}
 		if err := json.NewDecoder(r.Body).Decode(body); err != nil {
 			log.WarnContext(ctx, "Invalid JSON in CreateTeam request", slog.Any("error", err))
-			errorhandler.WriteError(w, apperrors.ErrBadRequest)
+			errorhandler.WriteError(w, apperrors.ErrBadRequest, log)
+
 			return
 		}
 
 		if body.TeamName == "" {
 			log.WarnContext(ctx, "Missing team_name in CreateTeam request")
-			errorhandler.WriteError(w, apperrors.ErrBadRequest)
+			errorhandler.WriteError(w, apperrors.ErrBadRequest, log)
+
 			return
 		}
 
 		ctx = logctx.WithTeam(ctx, body.TeamName)
 
 		userModelMem := make([]user.UserModel, 0, len(body.Members))
+
 		for _, val := range body.Members {
-			if val.UserId == "" {
+			if val.UserID == "" {
 				log.WarnContext(ctx, "Missing user_id in team member", slog.String("username", val.Username))
-				errorhandler.WriteError(w, apperrors.ErrBadRequest)
+				errorhandler.WriteError(w, apperrors.ErrBadRequest, log)
+
 				return
 			}
+
 			userModelMem = append(userModelMem, user.UserModel{
-				Id:       val.UserId,
+				ID:       val.UserID,
 				TeamName: body.TeamName,
 				IsActive: val.IsActive,
 				UserName: val.Username,
 			})
-			ctx = logctx.WithUserID(ctx, val.UserId)
+
+			ctx = logctx.WithUserID(ctx, val.UserID)
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -60,14 +66,16 @@ func CreateTeam(repo *repo.Repo, log *slog.Logger) http.HandlerFunc {
 		_, users, err := repo.Team.CreateOrUpdateTeamWithUsers(ctx, body.TeamName, userModelMem)
 		if err != nil {
 			log.ErrorContext(ctx, "Failed to create team", slog.Any("error", err))
-			errorhandler.WriteError(w, err)
+			errorhandler.WriteError(w, err, log)
+
 			return
 		}
 
 		var mem []dto.User
+
 		for _, val := range users {
 			temp := dto.User{
-				UserId:   val.Id,
+				UserID:   val.ID,
 				Username: val.UserName,
 				IsActive: val.IsActive,
 			}
@@ -83,6 +91,7 @@ func CreateTeam(repo *repo.Repo, log *slog.Logger) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
+
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			log.ErrorContext(ctx, "Failed to encode CreateTeam response", slog.Any("error", err))
 		}
@@ -93,7 +102,7 @@ func CreateTeam(repo *repo.Repo, log *slog.Logger) http.HandlerFunc {
 
 func GetTeam(repos *repo.Repo, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := logctx.WithReqId(r.Context())
+		ctx := logctx.WithReqID(r.Context())
 		log.InfoContext(ctx, "Received GetTeam request",
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
@@ -102,7 +111,8 @@ func GetTeam(repos *repo.Repo, log *slog.Logger) http.HandlerFunc {
 		teamName := r.URL.Query().Get("team_name")
 		if teamName == "" {
 			log.WarnContext(ctx, "Missing team_name query parameter")
-			errorhandler.WriteError(w, apperrors.ErrBadRequest)
+			errorhandler.WriteError(w, apperrors.ErrBadRequest, log)
+
 			return
 		}
 
@@ -114,14 +124,15 @@ func GetTeam(repos *repo.Repo, log *slog.Logger) http.HandlerFunc {
 		mems, err := repos.Team.GetUsersFromTeam(ctx, teamName)
 		if err != nil {
 			log.ErrorContext(ctx, "Failed to get team", slog.Any("error", err))
-			errorhandler.WriteError(w, err)
+			errorhandler.WriteError(w, err, log)
+
 			return
 		}
 
 		var memResp []dto.User
 		for _, val := range mems {
 			memResp = append(memResp, dto.User{
-				UserId:   val.Id,
+				UserID:   val.ID,
 				Username: val.UserName,
 				IsActive: val.IsActive,
 			})
@@ -136,6 +147,7 @@ func GetTeam(repos *repo.Repo, log *slog.Logger) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			log.ErrorContext(ctx, "Failed to encode GetTeam response", slog.Any("error", err))
 		}

@@ -16,10 +16,10 @@ import (
 
 type Server struct {
 	log  *slog.Logger
-	cfg  *config.Http
+	cfg  *config.HTTP
 	repo *repo.Repo
 
-	//Do not touch
+	// Do not touch
 	srv *http.Server
 }
 
@@ -39,7 +39,7 @@ func (s *Server) CreateServer() {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept")
 
-		if r.Method == "OPTIONS" {
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -59,6 +59,7 @@ func (s *Server) CreateServer() {
 
 	go func() {
 		s.log.Info("HTTP server starting", slog.String("addr", s.cfg.Addr))
+
 		if err := srv.ListenAndServe(); err != nil {
 			s.log.Error("HTTP server failed", slog.Any("error", err))
 			return
@@ -72,7 +73,7 @@ func (s *Server) Close() error {
 	return s.srv.Close()
 }
 
-func NewRestApi(cfg *config.Http, repo *repo.Repo, log *slog.Logger) *Server {
+func NewRestAPI(cfg *config.HTTP, repo *repo.Repo, log *slog.Logger) *Server {
 	return &Server{
 		cfg:  cfg,
 		repo: repo,

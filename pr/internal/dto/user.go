@@ -3,13 +3,13 @@ package dto
 // general
 
 type User struct {
-	UserId   string `json:"user_id"`
+	UserID   string `json:"user_id"`
 	Username string `json:"username"`
 	IsActive bool   `json:"is_active"`
 }
 
 type UserWithTeam struct {
-	UserId   string `json:"user_id"`
+	UserID   string `json:"user_id"`
 	Username string `json:"username"`
 	IsActive bool   `json:"is_active"`
 	TeamName string `json:"team_name"`
@@ -18,7 +18,7 @@ type UserWithTeam struct {
 // requests
 
 type SetUserStatusRequest struct {
-	Id       string `json:"user_id"`
+	ID       string `json:"user_id"`
 	IsActive bool   `json:"is_active"`
 }
 
@@ -29,6 +29,6 @@ type SetUserStatusResponse struct {
 }
 
 type GetUserPRResponse struct {
-	UserId string `json:"user_id"`
+	UserID string `json:"user_id"`
 	PR     []PR   `json:"pull_requests"`
 }

@@ -1,0 +1,90 @@
+linters:
+  # ЯВНО включаем нужные линтеры (без enable-all!)
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - gosimple
+    - unused
+    - revive
+    - ineffassign
+    - typecheck
+    - bodyclose
+    - dupl
+    - errname
+    - errorlint
+    - forcetypeassert
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - godot
+    - gomoddirectives
+    - goprintffuncname
+    - gosec
+    - lll
+    - makezero
+    - mirror
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - rowserrcheck
+    - sloglint
+    - sqlclosecheck
+    - stylecheck
+    - testableexamples
+    - testifylint
+    - testpackage
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    - wsl
+    - nlreturn
+    - gofmt      # несмотря на disable — лучше оставить для форматирования
+    - goimports  # аналогично
+
+  # Отключаем только то, что точно не нужно
+  disable:
+    - ireturn
+    - musttag
+    - exhaustruct
+    - gochecknoglobals
+    - paralleltest
+    - godox
+    - gci
+    - wrapcheck
+    - gofumpt
+    - tagliatelle
+    - depguard
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+      - name: var-naming
+        disabled: false
+
+  wsl:
+    force-err-cuddling: true
+
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+
+  nlreturn:
+    block-size: 2
+
+run:
+  issues-exit-code: 1
