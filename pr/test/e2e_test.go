@@ -24,28 +24,26 @@ import (
 )
 
 const (
-	DB_URL    = "postgres://User:241265@localhost:5433/postgres?sslmode=disable"
-	HTTP_PORT = ":8081"
-	HTTP_HOST = "http://localhost" + HTTP_PORT
+	DBURL    = "postgres://User:241265@localhost:5433/postgres?sslmode=disable"
+	HTTPPort = ":8081"
+	HTTPHost = "http://localhost" + HTTPPort
 )
 
 func TestMain(m *testing.M) {
 	if err := exec.Command("docker-compose", "-f", "compose.test.yml", "up", "-d").Run(); err != nil {
 		log.Fatal("Failed to start test DB:", err)
 	}
-	defer func() {
-		_ = exec.Command("docker-compose", "-f", "compose.test.yml", "down", "-v").Run()
-	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	if err := waitForDB(ctx); err != nil {
+		_ = exec.Command("docker-compose", "-f", "compose.test.yml", "down", "-v").Run()
 		log.Fatal("DB not ready:", err)
 	}
 
 	cfg := config.MustLoad()
-	cfg.Storage.URL = DB_URL
-	cfg.HTTP.Addr = HTTP_PORT
+	cfg.Storage.URL = DBURL
+	cfg.HTTP.Addr = HTTPPort
 
 	go func() {
 		app := app.NewBootstrap(cfg)
@@ -55,6 +53,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(10 * time.Second)
 
 	code := m.Run()
+	_ = exec.Command("docker-compose", "-f", "compose.test.yml", "down", "-v").Run()
 	os.Exit(code)
 }
 
@@ -64,15 +63,18 @@ func waitForDB(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			conn, err := pgxpool.New(ctx, DB_URL)
+			conn, err := pgxpool.New(ctx, DBURL)
+
 			if err != nil {
 				time.Sleep(200 * time.Millisecond)
 				continue
 			}
+
 			if err := conn.Ping(ctx); err == nil {
 				conn.Close()
 				return nil
 			}
+
 			conn.Close()
 			time.Sleep(200 * time.Millisecond)
 		}
@@ -92,12 +94,15 @@ func TestScenario_CreateTeamsAndPRs(t *testing.T) {
 		{TeamName: "ML", Members: generateUsers(4)},
 	}
 
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	wg := &sync.WaitGroup{}
+
+	mtx := &sync.Mutex{}
+
 	createdTeams := make([]dto.CreateTeamResponse, len(teams))
 
 	for i, team := range teams {
 		wg.Add(1)
+
 		go func(idx int, team dto.CreateTeamRequest) {
 			defer wg.Done()
 
@@ -114,9 +119,9 @@ func TestScenario_CreateTeamsAndPRs(t *testing.T) {
 				return
 			}
 
-			mu.Lock()
+			mtx.Lock()
 			createdTeams[idx] = resp
-			mu.Unlock()
+			mtx.Unlock()
 		}(i, team)
 	}
 	wg.Wait()
@@ -177,11 +182,12 @@ func generateUsers(n int) []dto.User {
 			IsActive: true,
 		}
 	}
+
 	return users
 }
 
 func Request(reqBody []byte, method, path string) (resBody []byte, statusCode int, err error) {
-	req, err := http.NewRequest(method, HTTP_HOST+path, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest(method, HTTPHost+path, bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to create request: %w", err)
 	}

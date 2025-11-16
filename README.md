@@ -1,6 +1,6 @@
 ## Запуск
 
-Для запуска потребуется прописать эту при открытом Docker
+Для запуска потребуется прописать эту команду при открытом Docker
 
 ```bash
 docker compose up --build
@@ -22,6 +22,11 @@ go test -v -count=1
 В проекте используется `golangci-lint` для статического анализа кода. \
 Конфигурация: [.golangci.yml](pr/.golangci.yml).\
 Использовать можно через: [lint.go](pr/lint.go)
+
+## Нагрузочное тестирование
+<div>
+  <img src="images/highloadtest.png" alt="test" style="width:60%; height: auto;">
+</div>
 
 ## Вопросы/Проблемы
 В ТЗ (openapi.yml) написано:

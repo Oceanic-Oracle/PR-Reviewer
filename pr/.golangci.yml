@@ -86,5 +86,9 @@ linters-settings:
   nlreturn:
     block-size: 2
 
+issues:
+  exclude-files:
+    - "test"
+
 run:
   issues-exit-code: 1
