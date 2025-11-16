@@ -1,8 +1,12 @@
 package main
 
-import "pr/internal/app"
+import (
+	"pr/internal/app"
+	"pr/internal/config"
+)
 
 func main() {
-	app := app.NewBootstrap()
+	cfg := config.MustLoad()
+	app := app.NewBootstrap(cfg)
 	app.Run()
 }

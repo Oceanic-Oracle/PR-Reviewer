@@ -70,8 +70,7 @@ func (b *Bootstrap) initRepo() (*repo.Repo, func()) {
 	}
 }
 
-func NewBootstrap() *Bootstrap {
-	cfg := config.MustLoad()
+func NewBootstrap(cfg *config.Config) *Bootstrap {
 	log := logger.SetupLogger(cfg.Env)
 
 	return &Bootstrap{
